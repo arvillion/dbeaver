@@ -247,11 +247,32 @@ public class ResultSetModel {
         return visibleAttributes.get(index);
     }
 
+    @NotNull
+    public List<DBDAttributeBinding> getVisibleLeafAttributes() {
+        final List<DBDAttributeBinding> children = new ArrayList<>();
+        final Deque<DBDAttributeBinding> parents = new ArrayDeque<>(getVisibleAttributes());
+
+        while (!parents.isEmpty()) {
+            final DBDAttributeBinding attribute = parents.removeFirst();
+            final List<DBDAttributeBinding> nested = getVisibleAttributes(attribute);
+
+            if (CommonUtils.isEmpty(nested)) {
+                children.add(attribute);
+            } else {
+                for (int i = nested.size() - 1; i >= 0; i--) {
+                    parents.offerFirst(nested.get(i));
+                }
+            }
+        }
+
+        return children;
+    }
+
     public void setAttributeVisibility(@NotNull DBDAttributeBinding attribute, boolean visible) {
         DBDAttributeConstraint constraint = dataFilter.getConstraint(attribute);
         if (constraint != null && constraint.isVisible() != visible) {
             constraint.setVisible(visible);
-            if (attribute.getParentObject() == null) {
+            if (attribute.getParentObject() == null || attribute.getParentObject() == documentAttribute) {
                 if (visible) {
                     visibleAttributes.add(attribute);
                 } else {
@@ -930,7 +951,7 @@ public class ResultSetModel {
 
         for (DBSAttributeBase attr : this.dataFilter.getOrderedVisibleAttributes()) {
             DBDAttributeBinding binding = getAttributeBinding(attr);
-            if (binding != null && binding.getParentObject() == null) {
+            if (binding != null && (binding.getParentObject() == null || binding.getParentObject() == documentAttribute)) {
                 newBindings.add(binding);
             }
         }
@@ -989,7 +1010,7 @@ public class ResultSetModel {
                 } else {
                     if (!visibleAttributes.contains(cAttr)) {
                         DBDAttributeBinding attribute = (DBDAttributeBinding) cAttr;
-                        if (attribute.getParentObject() == null) {
+                        if (attribute.getParentObject() == null || attribute.getParentObject() == documentAttribute) {
                             // Add only root attributes
                             visibleAttributes.add(attribute);
                         }

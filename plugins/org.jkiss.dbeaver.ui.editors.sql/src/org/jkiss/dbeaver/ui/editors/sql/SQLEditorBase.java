@@ -895,18 +895,26 @@ public abstract class SQLEditorBase extends BaseTextEditor implements DBPContext
             marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
             marker.setAttribute(IMarker.MESSAGE, message);
             marker.setAttribute(IMarker.TRANSIENT, true);
-            MarkerUtilities.setCharStart(marker, position.offset);
-            MarkerUtilities.setCharEnd(marker, position.offset + position.length);
+            // For some reason, these two cause the annotation to de-sync from this marker:
+            // MarkerUtilities.setCharStart(marker, position.offset);
+            // MarkerUtilities.setCharEnd(marker, position.offset + position.length);
             annotationModel.addAnnotation(new SQLProblemAnnotation(marker), position);
         } catch (CoreException e) {
             log.error("Error creating problem marker", e);
         }
 
+        // We don't want to show this view every time because it makes everyone mad.
+        // But there's a catch: the user can't remove the annotation outside of this
+        // view, and also can't open this view without knowing about it in advance.
+        // Should we display a confirmation dialog with "Remember my choice" option?
+
+        /*
         try {
             UIUtils.getActiveWorkbenchWindow().getActivePage().showView(IPageLayout.ID_PROBLEM_VIEW, null, IWorkbenchPage.VIEW_VISIBLE);
         } catch (PartInitException e) {
             log.debug("Error opening problem view", e);
         }
+        */
 
         return true;
     }

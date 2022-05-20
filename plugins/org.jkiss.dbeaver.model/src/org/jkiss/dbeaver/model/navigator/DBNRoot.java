@@ -19,6 +19,8 @@ package org.jkiss.dbeaver.model.navigator;
 import org.eclipse.core.resources.IProject;
 import org.jkiss.code.NotNull;
 import org.jkiss.dbeaver.model.DBPImage;
+import org.jkiss.dbeaver.model.app.DBPPlatform;
+import org.jkiss.dbeaver.model.app.DBPPlatformEclipse;
 import org.jkiss.dbeaver.model.app.DBPProject;
 import org.jkiss.dbeaver.model.app.DBPProjectListener;
 import org.jkiss.dbeaver.model.messages.ModelMessages;
@@ -28,10 +30,7 @@ import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
 import org.jkiss.dbeaver.runtime.DBWorkbench;
 import org.jkiss.utils.ArrayUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * DBNRoot
@@ -53,7 +52,10 @@ public class DBNRoot extends DBNNode implements DBNContainer, DBNNodeExtendable,
             }
         }
         if (model.isGlobal()) {
-            model.getPlatform().getWorkspace().addProjectListener(this);
+            DBPPlatform platform = DBWorkbench.getPlatform();
+            if (platform instanceof DBPPlatformEclipse) {
+                ((DBPPlatformEclipse)platform).getWorkspace().addProjectListener(this);
+            }
         }
         DBNRegistry.getInstance().extendNode(this, false);
     }
@@ -70,7 +72,10 @@ public class DBNRoot extends DBNNode implements DBNContainer, DBNNodeExtendable,
         extraNodes.clear();
 
         if (model.isGlobal()) {
-            model.getPlatform().getWorkspace().removeProjectListener(this);
+            DBPPlatform platform = DBWorkbench.getPlatform();
+            if (platform instanceof DBPPlatformEclipse) {
+                ((DBPPlatformEclipse)platform).getWorkspace().removeProjectListener(this);
+            }
         }
     }
 
@@ -172,8 +177,10 @@ public class DBNRoot extends DBNNode implements DBNContainer, DBNNodeExtendable,
     }
 
     public DBNProject getProjectNode(DBPProject project) {
+        UUID projectID = project.getProjectID();
         for (DBNProject node : projects) {
-            if (node.getProject() == project) {
+            DBPProject nodeProject = node.getProject();
+            if (nodeProject != null && (nodeProject == project || nodeProject.getProjectID().compareTo(projectID) == 0)) {
                 return node;
             }
         }
@@ -181,10 +188,12 @@ public class DBNRoot extends DBNNode implements DBNContainer, DBNNodeExtendable,
     }
 
     public DBNProject addProject(DBPProject project, boolean reflect) {
+        DBPPlatform platform = DBWorkbench.getPlatform();
         DBNProject projectNode = new DBNProject(
             this,
             project,
-            project.getWorkspace().getResourceHandler(project.getEclipseProject()));
+            platform instanceof DBPPlatformEclipse ?
+                ((DBPPlatformEclipse)platform).getWorkspace().getResourceHandler(project.getEclipseProject()) : null);
         projects = ArrayUtils.add(DBNProject.class, projects, projectNode);
         Arrays.sort(projects, Comparator.comparing(DBNResource::getNodeName));
         if (reflect) {

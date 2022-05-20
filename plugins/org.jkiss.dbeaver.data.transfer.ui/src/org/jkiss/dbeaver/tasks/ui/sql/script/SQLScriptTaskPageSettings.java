@@ -29,6 +29,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.*;
 import org.jkiss.dbeaver.Log;
 import org.jkiss.dbeaver.model.DBPDataSourceContainer;
+import org.jkiss.dbeaver.model.app.DBPPlatformEclipse;
 import org.jkiss.dbeaver.model.app.DBPProject;
 import org.jkiss.dbeaver.model.app.DBPResourceHandler;
 import org.jkiss.dbeaver.model.navigator.DBNDataSource;
@@ -55,7 +56,7 @@ class SQLScriptTaskPageSettings extends ActiveWizardPage<SQLScriptTaskConfigurat
 
     private static final Log log = Log.getLog(SQLScriptTaskPageSettings.class);
 
-    private SQLScriptTaskConfigurationWizard sqlWizard;
+    private final SQLScriptTaskConfigurationWizard sqlWizard;
     private Button ignoreErrorsCheck;
     private Button dumpQueryCheck;
     private Button autoCommitCheck;
@@ -107,7 +108,7 @@ class SQLScriptTaskPageSettings extends ActiveWizardPage<SQLScriptTaskConfigurat
                 StructuredSelection selection = (StructuredSelection) event.getSelection();
                 IResource resource = ((DBNResource) selection.getFirstElement()).getResource();
                 if (resource != null) {
-                    DBPResourceHandler handler = DBWorkbench.getPlatform().getWorkspace().getResourceHandler(resource);
+                    DBPResourceHandler handler = DBPPlatformEclipse.getInstance().getWorkspace().getResourceHandler(resource);
                     if (handler != null) {
                         try {
                             handler.openResource(resource);
@@ -285,7 +286,6 @@ class SQLScriptTaskPageSettings extends ActiveWizardPage<SQLScriptTaskConfigurat
 
             ignoreErrorsCheck = UIUtils.createCheckbox(settingsGroup, DTMessages.sql_script_task_page_settings_option_ignore_errors, "", dtSettings.isIgnoreErrors(), 1);
             dumpQueryCheck = UIUtils.createCheckbox(settingsGroup, DTMessages.sql_script_task_page_settings_option_dump_results, "", dtSettings.isDumpQueryResultsToLog(), 1);
-            dumpQueryCheck.setEnabled(false);
             autoCommitCheck = UIUtils.createCheckbox(settingsGroup, DTMessages.sql_script_task_page_settings_option_auto_commit, "", dtSettings.isAutoCommit(), 1);
 
             getWizard().createVariablesEditButton(settingsGroup);
@@ -370,7 +370,7 @@ class SQLScriptTaskPageSettings extends ActiveWizardPage<SQLScriptTaskConfigurat
                 log.debug("Script file '" + filePath + "' not found");
                 continue;
             }
-            DBPProject currentProject = DBWorkbench.getPlatform().getWorkspace().getProject(file.getProject());
+            DBPProject currentProject = DBPPlatformEclipse.getInstance().getWorkspace().getProject(file.getProject());
             if (currentProject == null) {
                 log.debug("Project '" + file.getProject().getName() + "' not found");
                 continue;
